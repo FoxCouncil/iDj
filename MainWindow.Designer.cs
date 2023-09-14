@@ -29,10 +29,13 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            Label labelPlaybackSource;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
             statusBar = new StatusStrip();
-            lblActivity = new ToolStripStatusLabel();
+            toolStripStatusLabelActivity = new ToolStripStatusLabel();
             toolStripStatusLabeliTunesVersionText = new ToolStripStatusLabel();
+            toolStripStatusLabelCurrentTime = new ToolStripStatusLabel();
+            toolStripStatusLabelCurrentDate = new ToolStripStatusLabel();
             lblTest = new ToolStripStatusLabel();
             timerInterface = new System.Windows.Forms.Timer(components);
             lblTrackTitle = new Label();
@@ -52,35 +55,38 @@
             tabPagePlaylists = new TabPage();
             listBoxPlaylistTracks = new ListBox();
             lblPlaylistName = new Label();
+            comboBox1 = new ComboBox();
+            labelPlaybackSource = new Label();
             statusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picboxTrackArtwork).BeginInit();
             panel1.SuspendLayout();
             tabControl.SuspendLayout();
+            tabPageControls.SuspendLayout();
             tabPagePlaylists.SuspendLayout();
             SuspendLayout();
             // 
             // statusBar
             // 
             statusBar.ImageScalingSize = new Size(24, 24);
-            statusBar.Items.AddRange(new ToolStripItem[] { lblActivity, toolStripStatusLabeliTunesVersionText, lblTest });
+            statusBar.Items.AddRange(new ToolStripItem[] { toolStripStatusLabelActivity, toolStripStatusLabeliTunesVersionText, toolStripStatusLabelCurrentTime, toolStripStatusLabelCurrentDate, lblTest });
             statusBar.Location = new Point(0, 728);
             statusBar.Name = "statusBar";
             statusBar.Size = new Size(798, 36);
             statusBar.TabIndex = 1;
             statusBar.Text = "statusStrip1";
             // 
-            // lblActivity
+            // toolStripStatusLabelActivity
             // 
-            lblActivity.AutoSize = false;
-            lblActivity.BackColor = SystemColors.Control;
-            lblActivity.BorderSides = ToolStripStatusLabelBorderSides.Right;
-            lblActivity.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            lblActivity.Font = new Font("Consolas", 11F, FontStyle.Bold, GraphicsUnit.Point);
-            lblActivity.ForeColor = Color.DarkGreen;
-            lblActivity.Name = "lblActivity";
-            lblActivity.Size = new Size(50, 29);
-            lblActivity.Text = "-";
-            lblActivity.TextAlign = ContentAlignment.TopCenter;
+            toolStripStatusLabelActivity.AutoSize = false;
+            toolStripStatusLabelActivity.BackColor = SystemColors.Control;
+            toolStripStatusLabelActivity.BorderSides = ToolStripStatusLabelBorderSides.Right;
+            toolStripStatusLabelActivity.DisplayStyle = ToolStripItemDisplayStyle.Text;
+            toolStripStatusLabelActivity.Font = new Font("Consolas", 11F, FontStyle.Bold, GraphicsUnit.Point);
+            toolStripStatusLabelActivity.ForeColor = Color.DarkGreen;
+            toolStripStatusLabelActivity.Name = "toolStripStatusLabelActivity";
+            toolStripStatusLabelActivity.Size = new Size(50, 29);
+            toolStripStatusLabelActivity.Text = "-";
+            toolStripStatusLabelActivity.TextAlign = ContentAlignment.TopCenter;
             // 
             // toolStripStatusLabeliTunesVersionText
             // 
@@ -89,6 +95,22 @@
             toolStripStatusLabeliTunesVersionText.Name = "toolStripStatusLabeliTunesVersionText";
             toolStripStatusLabeliTunesVersionText.Size = new Size(83, 29);
             toolStripStatusLabeliTunesVersionText.Text = "OFFLINE";
+            // 
+            // toolStripStatusLabelCurrentTime
+            // 
+            toolStripStatusLabelCurrentTime.BackColor = SystemColors.Control;
+            toolStripStatusLabelCurrentTime.BorderSides = ToolStripStatusLabelBorderSides.Right;
+            toolStripStatusLabelCurrentTime.Name = "toolStripStatusLabelCurrentTime";
+            toolStripStatusLabelCurrentTime.Size = new Size(105, 29);
+            toolStripStatusLabelCurrentTime.Text = "4:20:00 PM";
+            // 
+            // toolStripStatusLabelCurrentDate
+            // 
+            toolStripStatusLabelCurrentDate.BackColor = SystemColors.Control;
+            toolStripStatusLabelCurrentDate.BorderSides = ToolStripStatusLabelBorderSides.Right;
+            toolStripStatusLabelCurrentDate.Name = "toolStripStatusLabelCurrentDate";
+            toolStripStatusLabelCurrentDate.Size = new Size(216, 29);
+            toolStripStatusLabelCurrentDate.Text = "Monday, June 15th, 2009";
             // 
             // lblTest
             // 
@@ -271,6 +293,10 @@
             // 
             // tabPageControls
             // 
+            tabPageControls.BackColor = Color.Black;
+            tabPageControls.Controls.Add(comboBox1);
+            tabPageControls.Controls.Add(labelPlaybackSource);
+            tabPageControls.ForeColor = Color.White;
             tabPageControls.ImageIndex = 0;
             tabPageControls.Location = new Point(4, 34);
             tabPageControls.Name = "tabPageControls";
@@ -278,7 +304,6 @@
             tabPageControls.Size = new Size(766, 339);
             tabPageControls.TabIndex = 0;
             tabPageControls.Text = "Controls";
-            tabPageControls.UseVisualStyleBackColor = true;
             // 
             // tabPagePlaylists
             // 
@@ -316,6 +341,25 @@
             lblPlaylistName.Text = "Name";
             lblPlaylistName.TextAlign = ContentAlignment.MiddleLeft;
             // 
+            // labelPlaybackSource
+            // 
+            labelPlaybackSource.BorderStyle = BorderStyle.FixedSingle;
+            labelPlaybackSource.Location = new Point(6, 14);
+            labelPlaybackSource.Name = "labelPlaybackSource";
+            labelPlaybackSource.Size = new Size(120, 25);
+            labelPlaybackSource.TabIndex = 0;
+            labelPlaybackSource.Text = "Source:";
+            labelPlaybackSource.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // comboBox1
+            // 
+            comboBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Location = new Point(132, 11);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new Size(628, 33);
+            comboBox1.TabIndex = 1;
+            // 
             // MainWindow
             // 
             AutoScaleDimensions = new SizeF(10F, 25F);
@@ -344,6 +388,7 @@
             ((System.ComponentModel.ISupportInitialize)picboxTrackArtwork).EndInit();
             panel1.ResumeLayout(false);
             tabControl.ResumeLayout(false);
+            tabPageControls.ResumeLayout(false);
             tabPagePlaylists.ResumeLayout(false);
             ResumeLayout(false);
             PerformLayout();
@@ -351,7 +396,7 @@
 
         #endregion
         private StatusStrip statusBar;
-        private ToolStripStatusLabel toolStripStatusLabeliTunesVersionText;
+        private ToolStripStatusLabel toolStripStatusLabelCurrentTime;
         private System.Windows.Forms.Timer timerInterface;
         private Label lblTrackTitle;
         private FontAwesome.Sharp.IconButton btnStepBack;
@@ -363,15 +408,17 @@
         private IDjTimeBar progPlayerTime;
         private Label lblPlayerCurrent;
         private Label lblTrackTotal;
-        private ToolStripStatusLabel lblActivity;
+        private ToolStripStatusLabel toolStripStatusLabelActivity;
         private Panel panel1;
         private TabControl tabControl;
         private TabPage tabPageControls;
         private TabPage tabPagePlaylists;
-        private ToolStripStatusLabel toolStripStatusLabel1;
+        private ToolStripStatusLabel toolStripStatusLabelCurrentDate;
         private ToolStripStatusLabel lblTest;
         private Label lblTrackDetails;
         private ListBox listBoxPlaylistTracks;
         private Label lblPlaylistName;
+        private ToolStripStatusLabel toolStripStatusLabeliTunesVersionText;
+        private ComboBox comboBox1;
     }
 }

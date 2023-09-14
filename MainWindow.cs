@@ -1,6 +1,5 @@
 using FontAwesome.Sharp;
 using iDj.iTunes;
-using System.Collections.Concurrent;
 using System.Runtime.InteropServices;
 
 namespace iDj
@@ -14,9 +13,11 @@ namespace iDj
         //};
         private static readonly char[] SpinnerFrames = { '\u2588', '\u2593', '\u2592', '\u2591', '\u2592', '\u2593', '\u2588', '\u2593', '\u2592', '\u2591', '\u2592', '\u2593', '\u258C', '\u2590', '\u2580', '\u2584' };
 
-        private readonly iTunesAppClass iTunes = new();
+        private iTunesAppClass iTunes = new();
 
         private ImageList tabImageList;
+
+        private bool isPlaying;
 
         private int frameIndex;
         private int currentPlaylistId;
@@ -27,6 +28,8 @@ namespace iDj
         {
             InitializeComponent();
 
+            FormClosed += (s, e) => Marshal.ReleaseComObject(iTunes);
+
             iTunes.OnAboutToPromptUserToQuitEvent += Quit;
             iTunes.OnQuittingEvent += Quit;
 
@@ -36,19 +39,27 @@ namespace iDj
 
             tabControl.ImageList = tabImageList;
 
+            lblTrackArtist.Text = string.Empty;
+            lblTrackTitle.Text = string.Empty;
+            lblTrackAlbum.Text = string.Empty;
+            lblTrackDetails.Text = string.Empty;
+
             toolStripStatusLabeliTunesVersionText.Text = $"Version: {iTunes.Version}";
+            toolStripStatusLabelCurrentTime.Text = string.Empty;
+            toolStripStatusLabelCurrentDate.Text = string.Empty;
         }
 
         private void Quit()
         {
             if (InvokeRequired)
             {
-                Invoke(Quit);
+                Invoke(new MethodInvoker(Quit));
 
                 return;
             }
 
-            Marshal.ReleaseComObject(iTunes);
+            iTunes.OnAboutToPromptUserToQuitEvent -= Quit;
+            iTunes.OnQuittingEvent -= Quit;
 
             Close();
         }
@@ -77,97 +88,140 @@ namespace iDj
         {
             timerInterface.Stop();
 
-            var isPlaying = iTunes.PlayerState == ITPlayerState.ITPlayerStatePlaying;
-
-            btnPlayPause.IconChar = isPlaying ? IconChar.Pause : IconChar.Play;
+            UpdateUIStates();
 
             var currentTrack = iTunes.CurrentTrack;
 
-            if (currentTrack != null)
+            if (currentTrack != null && currentTrackDatabaseId != currentTrack.TrackDatabaseID)
             {
-                try
-                {
-                    if (currentTrackDatabaseId != currentTrack.TrackDatabaseID)
-                    {
-                        // Update Only Once Per Change
-
-                        currentTrackDatabaseId = currentTrack.TrackDatabaseID;
-                        currentTrackDuration = currentTrack.Duration;
-
-                        progPlayerTime.Maximum = currentTrack.Duration;
-
-                        var timeSpan = TimeSpan.FromSeconds(currentTrack.Duration);
-
-                        lblTrackTotal.Text = timeSpan.ToString(@"mm\:ss");
-
-                        lblTrackArtist.Text = currentTrack.Artist;
-                        lblTrackTitle.Text = currentTrack.Name;
-                        lblTrackAlbum.Text = currentTrack.Album;
-                        lblTrackDetails.Text = $"Year: {currentTrack.Year} | {currentTrack.SampleRate / 1000.0f:F1}Khz | {currentTrack.KindAsString}";
-
-                        var playlist = currentTrack.Playlist;
-
-                        if (playlist != null && currentPlaylistId != playlist.playlistID)
-                        {
-                            currentPlaylistId = playlist.playlistID;
-
-                            tabPagePlaylists.Text = $"Playlist: {playlist.Name}";
-                            lblPlaylistName.Text = $"{playlist.Name} | {playlist.Time} | {playlist.Tracks.Count}";
-
-                            listBoxPlaylistTracks.Items.Clear();
-
-                            if (playlist.Tracks.Count < 500)
-                            {
-                                var tracks = new List<string>(playlist.Tracks.Count);
-
-                                foreach (IITTrack track in playlist.Tracks)
-                                {
-                                    tracks.Add($"{track.Artist} - {track.Name}");
-                                }
-
-                                listBoxPlaylistTracks.Items.AddRange(tracks.ToArray());
-                            }
-                        }
-
-                        listBoxPlaylistTracks.SelectedIndex = currentTrack.PlayOrderIndex - 1;
-
-                        ClearAlbumArtwork();
-
-                        var artwork = currentTrack.Artwork.Count != 0 ? currentTrack.Artwork[1] : null;
-
-                        if (artwork != null)
-                        {
-                            var fileExtension = GetFileExtensionFromFormat(artwork.Format);
-
-                            var executivePath = Path.GetDirectoryName(Application.ExecutablePath) ?? string.Empty;
-
-                            var fullPath = Path.Combine(executivePath, $"albumart.{fileExtension}");
-
-                            artwork.SaveArtworkToFile(fullPath);
-
-                            picboxTrackArtwork.Image = Image.FromFile(fullPath);
-                        }
-                    }
-
-                    // Update Time;
-                    progPlayerTime.Value = iTunes.PlayerPosition;
-                    progPlayerTime.Text = TimeSpan.FromSeconds(currentTrackDuration - iTunes.PlayerPosition).ToString(@"\-mm\:ss");
-
-                    lblPlayerCurrent.Text = TimeSpan.FromSeconds(progPlayerTime.Value).ToString(@"mm\:ss");
-                }
-                catch
-                {
-                    // noop
-                }
+                currentTrackDatabaseId = currentTrack.TrackDatabaseID;
+                currentTrackDuration = currentTrack.Duration;
 
                 Marshal.ReleaseComObject(currentTrack);
+
+                UpdateCurrentTrack();
+
+                UpdatePlaylist();
+
+                UpdateAlbumArt();
+            }
+            else if (currentTrack != null && isPlaying)
+            {
+                UpdatePlaybackTime();
             }
 
-            Text = $"{lblTrackArtist.Text} - {lblTrackTitle.Text} | iDj";
+            UpdateUIStatusBar();
 
             timerInterface.Start();
 
-            lblActivity.Text = ShowNextFrame();
+            toolStripStatusLabelActivity.Text = ShowNextFrame();
+        }
+        private void UpdateUIStates()
+        {
+            var isPlaying = iTunes.PlayerState == ITPlayerState.ITPlayerStatePlaying;
+
+            btnPlayPause.IconChar = isPlaying ? IconChar.Pause : IconChar.Play;
+        }
+
+        private void UpdateCurrentTrack()
+        {
+            var currentTrack = iTunes.CurrentTrack;
+            
+            progPlayerTime.Maximum = currentTrack.Duration;
+
+            var timeSpan = TimeSpan.FromSeconds(currentTrack.Duration);
+
+            lblTrackTotal.Text = timeSpan.ToString(@"mm\:ss");
+
+            lblTrackArtist.Text = currentTrack.Artist;
+            lblTrackTitle.Text = currentTrack.Name;
+            lblTrackAlbum.Text = currentTrack.Album;
+            lblTrackDetails.Text = $"Year: {currentTrack.Year} | {currentTrack.SampleRate / 1000.0f:F1}Khz | {currentTrack.KindAsString}";
+
+            Marshal.ReleaseComObject(currentTrack);
+        }
+
+        private void UpdatePlaylist()
+        {
+            var currentTrack = iTunes.CurrentTrack;
+
+            var playlist = currentTrack.Playlist;
+
+            if (playlist != null && currentPlaylistId != playlist.playlistID)
+            {
+                currentPlaylistId = playlist.playlistID;
+
+                tabPagePlaylists.Text = $"Playlist: {playlist.Name}";
+                lblPlaylistName.Text = $"{playlist.Name} | {playlist.Time} | {playlist.Tracks.Count}";
+
+                listBoxPlaylistTracks.Items.Clear();
+
+                if (playlist.Tracks.Count < 5000)
+                {
+                    listBoxPlaylistTracks.BeginInvoke(new Action(() =>
+                    {
+                        listBoxPlaylistTracks.BeginUpdate();
+
+                        foreach (IITTrack track in playlist.Tracks)
+                        {
+                            listBoxPlaylistTracks.Items.Add($"{track.PlayOrderIndex}. {track.Artist} - {track.Name}");
+                        }
+
+                        listBoxPlaylistTracks.EndUpdate();
+                    }));
+
+                }
+            }
+
+            var trackSelectedIndex = currentTrack.PlayOrderIndex - 1;
+
+            if (listBoxPlaylistTracks.Items.Count > currentTrack.PlayOrderIndex)
+            {
+                listBoxPlaylistTracks.SelectedIndex = trackSelectedIndex;
+            }
+
+            Marshal.ReleaseComObject(currentTrack);
+        }
+
+        private void UpdateAlbumArt()
+        {
+            ClearAlbumArtwork();
+
+            var currentTrack = iTunes.CurrentTrack;
+
+            var artwork = currentTrack.Artwork.Count != 0 ? currentTrack.Artwork[1] : null;
+
+            if (artwork != null)
+            {
+                var fileExtension = GetFileExtensionFromFormat(artwork.Format);
+
+                var executivePath = Path.GetDirectoryName(Application.ExecutablePath) ?? string.Empty;
+
+                var fullPath = Path.Combine(executivePath, $"albumart.{fileExtension}");
+
+                artwork.SaveArtworkToFile(fullPath);
+
+                picboxTrackArtwork.Image = Image.FromFile(fullPath);
+            }
+
+            Marshal.ReleaseComObject(currentTrack);
+        }
+
+        private void UpdatePlaybackTime()
+        {
+            progPlayerTime.Value = iTunes.PlayerPosition;
+            progPlayerTime.Text = TimeSpan.FromSeconds(currentTrackDuration - iTunes.PlayerPosition).ToString(@"\-mm\:ss");
+
+            lblPlayerCurrent.Text = TimeSpan.FromSeconds(progPlayerTime.Value).ToString(@"mm\:ss");
+        }
+
+        private void UpdateUIStatusBar()
+        {
+            toolStripStatusLabelCurrentTime.Text = DateTime.Now.ToString("T");
+
+            toolStripStatusLabelCurrentDate.Text = DateTime.Now.ToString("dddd, MMMM d, yyyy");
+
+            Text = $"{lblTrackArtist.Text} - {lblTrackTitle.Text} | iDj";
         }
 
         private void ClearAlbumArtwork()
