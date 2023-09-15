@@ -30,7 +30,10 @@
         {
             components = new System.ComponentModel.Container();
             Label labelPlaybackSource;
+            Panel panelCurrentTrackBackground;
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainWindow));
+            lblTrackDetails = new Label();
+            lblTrackAlbum = new Label();
             statusBar = new StatusStrip();
             toolStripStatusLabelActivity = new ToolStripStatusLabel();
             toolStripStatusLabeliTunesVersionText = new ToolStripStatusLabel();
@@ -44,26 +47,75 @@
             btnPlayPause = new FontAwesome.Sharp.IconButton();
             picboxTrackArtwork = new PictureBox();
             lblTrackArtist = new Label();
-            lblTrackAlbum = new Label();
             progPlayerTime = new IDjTimeBar();
             lblPlayerCurrent = new Label();
             lblTrackTotal = new Label();
-            panel1 = new Panel();
-            lblTrackDetails = new Label();
             tabControl = new TabControl();
             tabPageControls = new TabPage();
-            tabPagePlaylists = new TabPage();
-            listBoxPlaylistTracks = new ListBox();
-            lblPlaylistName = new Label();
+            idjToggleButton1 = new iDJToggleButton();
             comboBox1 = new ComboBox();
+            tabPagePlaylists = new TabPage();
+            iDjSpinnerPlaylist = new iDjSpinner();
+            listBoxPlaylistTracks = new iDjDoubleClickListBox();
+            lblPlaylistName = new Label();
             labelPlaybackSource = new Label();
+            panelCurrentTrackBackground = new Panel();
+            panelCurrentTrackBackground.SuspendLayout();
             statusBar.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)picboxTrackArtwork).BeginInit();
-            panel1.SuspendLayout();
             tabControl.SuspendLayout();
             tabPageControls.SuspendLayout();
             tabPagePlaylists.SuspendLayout();
             SuspendLayout();
+            // 
+            // labelPlaybackSource
+            // 
+            labelPlaybackSource.BorderStyle = BorderStyle.FixedSingle;
+            labelPlaybackSource.Location = new Point(6, 14);
+            labelPlaybackSource.Name = "labelPlaybackSource";
+            labelPlaybackSource.Size = new Size(120, 25);
+            labelPlaybackSource.TabIndex = 0;
+            labelPlaybackSource.Text = "Source:";
+            labelPlaybackSource.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // panelCurrentTrackBackground
+            // 
+            panelCurrentTrackBackground.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            panelCurrentTrackBackground.BackColor = Color.Black;
+            panelCurrentTrackBackground.Controls.Add(lblTrackDetails);
+            panelCurrentTrackBackground.Controls.Add(lblTrackAlbum);
+            panelCurrentTrackBackground.Location = new Point(0, 0);
+            panelCurrentTrackBackground.Name = "panelCurrentTrackBackground";
+            panelCurrentTrackBackground.Size = new Size(798, 174);
+            panelCurrentTrackBackground.TabIndex = 18;
+            // 
+            // lblTrackDetails
+            // 
+            lblTrackDetails.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblTrackDetails.AutoEllipsis = true;
+            lblTrackDetails.BackColor = Color.FromArgb(32, 32, 32);
+            lblTrackDetails.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point);
+            lblTrackDetails.ForeColor = Color.White;
+            lblTrackDetails.Location = new Point(168, 139);
+            lblTrackDetails.Name = "lblTrackDetails";
+            lblTrackDetails.Size = new Size(618, 22);
+            lblTrackDetails.TabIndex = 20;
+            lblTrackDetails.Text = "ABC";
+            lblTrackDetails.UseMnemonic = false;
+            // 
+            // lblTrackAlbum
+            // 
+            lblTrackAlbum.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            lblTrackAlbum.AutoEllipsis = true;
+            lblTrackAlbum.BackColor = Color.FromArgb(32, 32, 32);
+            lblTrackAlbum.Font = new Font("Consolas", 11F, FontStyle.Regular, GraphicsUnit.Point);
+            lblTrackAlbum.ForeColor = Color.White;
+            lblTrackAlbum.Location = new Point(168, 105);
+            lblTrackAlbum.Name = "lblTrackAlbum";
+            lblTrackAlbum.Size = new Size(618, 26);
+            lblTrackAlbum.TabIndex = 10;
+            lblTrackAlbum.Text = "ABC";
+            lblTrackAlbum.UseMnemonic = false;
             // 
             // statusBar
             // 
@@ -201,20 +253,6 @@
             lblTrackArtist.Text = "ABC";
             lblTrackArtist.UseMnemonic = false;
             // 
-            // lblTrackAlbum
-            // 
-            lblTrackAlbum.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblTrackAlbum.AutoEllipsis = true;
-            lblTrackAlbum.BackColor = Color.FromArgb(32, 32, 32);
-            lblTrackAlbum.Font = new Font("Consolas", 11F, FontStyle.Regular, GraphicsUnit.Point);
-            lblTrackAlbum.ForeColor = Color.White;
-            lblTrackAlbum.Location = new Point(168, 105);
-            lblTrackAlbum.Name = "lblTrackAlbum";
-            lblTrackAlbum.Size = new Size(618, 26);
-            lblTrackAlbum.TabIndex = 10;
-            lblTrackAlbum.Text = "ABC";
-            lblTrackAlbum.UseMnemonic = false;
-            // 
             // progPlayerTime
             // 
             progPlayerTime.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -255,31 +293,6 @@
             lblTrackTotal.Text = "00:00";
             lblTrackTotal.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // panel1
-            // 
-            panel1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            panel1.BackColor = Color.Black;
-            panel1.Controls.Add(lblTrackDetails);
-            panel1.Controls.Add(lblTrackAlbum);
-            panel1.Location = new Point(0, 0);
-            panel1.Name = "panel1";
-            panel1.Size = new Size(798, 174);
-            panel1.TabIndex = 18;
-            // 
-            // lblTrackDetails
-            // 
-            lblTrackDetails.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            lblTrackDetails.AutoEllipsis = true;
-            lblTrackDetails.BackColor = Color.FromArgb(32, 32, 32);
-            lblTrackDetails.Font = new Font("Courier New", 9F, FontStyle.Bold, GraphicsUnit.Point);
-            lblTrackDetails.ForeColor = Color.White;
-            lblTrackDetails.Location = new Point(168, 139);
-            lblTrackDetails.Name = "lblTrackDetails";
-            lblTrackDetails.Size = new Size(618, 22);
-            lblTrackDetails.TabIndex = 20;
-            lblTrackDetails.Text = "ABC";
-            lblTrackDetails.UseMnemonic = false;
-            // 
             // tabControl
             // 
             tabControl.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
@@ -294,6 +307,7 @@
             // tabPageControls
             // 
             tabPageControls.BackColor = Color.Black;
+            tabPageControls.Controls.Add(idjToggleButton1);
             tabPageControls.Controls.Add(comboBox1);
             tabPageControls.Controls.Add(labelPlaybackSource);
             tabPageControls.ForeColor = Color.White;
@@ -305,10 +319,37 @@
             tabPageControls.TabIndex = 0;
             tabPageControls.Text = "Controls";
             // 
+            // idjToggleButton1
+            // 
+            idjToggleButton1.BackColor = Color.Transparent;
+            idjToggleButton1.FlatStyle = FlatStyle.Flat;
+            idjToggleButton1.IconChar = FontAwesome.Sharp.IconChar.MicrophoneAlt;
+            idjToggleButton1.IconColor = Color.White;
+            idjToggleButton1.IconFont = FontAwesome.Sharp.IconFont.Auto;
+            idjToggleButton1.IconSize = 72;
+            idjToggleButton1.Location = new Point(100, 159);
+            idjToggleButton1.Name = "idjToggleButton1";
+            idjToggleButton1.Size = new Size(132, 118);
+            idjToggleButton1.TabIndex = 2;
+            idjToggleButton1.ToggleOnColor = Color.Red;
+            idjToggleButton1.UseVisualStyleBackColor = true;
+            // 
+            // comboBox1
+            // 
+            comboBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            comboBox1.FormattingEnabled = true;
+            comboBox1.Location = new Point(132, 11);
+            comboBox1.Name = "comboBox1";
+            comboBox1.Size = new Size(628, 33);
+            comboBox1.TabIndex = 1;
+            // 
             // tabPagePlaylists
             // 
+            tabPagePlaylists.BackColor = Color.DimGray;
+            tabPagePlaylists.Controls.Add(iDjSpinnerPlaylist);
             tabPagePlaylists.Controls.Add(listBoxPlaylistTracks);
             tabPagePlaylists.Controls.Add(lblPlaylistName);
+            tabPagePlaylists.ForeColor = Color.White;
             tabPagePlaylists.ImageIndex = 1;
             tabPagePlaylists.Location = new Point(4, 34);
             tabPagePlaylists.Name = "tabPagePlaylists";
@@ -316,15 +357,25 @@
             tabPagePlaylists.Size = new Size(766, 339);
             tabPagePlaylists.TabIndex = 1;
             tabPagePlaylists.Text = "Playlists";
-            tabPagePlaylists.UseVisualStyleBackColor = true;
+            // 
+            // iDjSpinnerPlaylist
+            // 
+            iDjSpinnerPlaylist.Dock = DockStyle.Fill;
+            iDjSpinnerPlaylist.Location = new Point(3, 53);
+            iDjSpinnerPlaylist.Name = "iDjSpinnerPlaylist";
+            iDjSpinnerPlaylist.Size = new Size(760, 283);
+            iDjSpinnerPlaylist.TabIndex = 4;
+            iDjSpinnerPlaylist.Visible = false;
             // 
             // listBoxPlaylistTracks
             // 
+            listBoxPlaylistTracks.BackColor = Color.DimGray;
             listBoxPlaylistTracks.Dock = DockStyle.Fill;
-            listBoxPlaylistTracks.FormattingEnabled = true;
+            listBoxPlaylistTracks.ForeColor = Color.White;
             listBoxPlaylistTracks.ItemHeight = 25;
             listBoxPlaylistTracks.Location = new Point(3, 53);
             listBoxPlaylistTracks.Name = "listBoxPlaylistTracks";
+            listBoxPlaylistTracks.ScrollAlwaysVisible = true;
             listBoxPlaylistTracks.Size = new Size(760, 283);
             listBoxPlaylistTracks.TabIndex = 3;
             // 
@@ -340,25 +391,6 @@
             lblPlaylistName.TabIndex = 2;
             lblPlaylistName.Text = "Name";
             lblPlaylistName.TextAlign = ContentAlignment.MiddleLeft;
-            // 
-            // labelPlaybackSource
-            // 
-            labelPlaybackSource.BorderStyle = BorderStyle.FixedSingle;
-            labelPlaybackSource.Location = new Point(6, 14);
-            labelPlaybackSource.Name = "labelPlaybackSource";
-            labelPlaybackSource.Size = new Size(120, 25);
-            labelPlaybackSource.TabIndex = 0;
-            labelPlaybackSource.Text = "Source:";
-            labelPlaybackSource.TextAlign = ContentAlignment.MiddleRight;
-            // 
-            // comboBox1
-            // 
-            comboBox1.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(132, 11);
-            comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(628, 33);
-            comboBox1.TabIndex = 1;
             // 
             // MainWindow
             // 
@@ -377,16 +409,16 @@
             Controls.Add(btnStepBack);
             Controls.Add(lblTrackTitle);
             Controls.Add(statusBar);
-            Controls.Add(panel1);
+            Controls.Add(panelCurrentTrackBackground);
             DoubleBuffered = true;
             Icon = (Icon)resources.GetObject("$this.Icon");
             MinimumSize = new Size(820, 820);
             Name = "MainWindow";
             Text = "iDj";
+            panelCurrentTrackBackground.ResumeLayout(false);
             statusBar.ResumeLayout(false);
             statusBar.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)picboxTrackArtwork).EndInit();
-            panel1.ResumeLayout(false);
             tabControl.ResumeLayout(false);
             tabPageControls.ResumeLayout(false);
             tabPagePlaylists.ResumeLayout(false);
@@ -409,16 +441,17 @@
         private Label lblPlayerCurrent;
         private Label lblTrackTotal;
         private ToolStripStatusLabel toolStripStatusLabelActivity;
-        private Panel panel1;
         private TabControl tabControl;
         private TabPage tabPageControls;
         private TabPage tabPagePlaylists;
         private ToolStripStatusLabel toolStripStatusLabelCurrentDate;
         private ToolStripStatusLabel lblTest;
         private Label lblTrackDetails;
-        private ListBox listBoxPlaylistTracks;
+        private iDjDoubleClickListBox listBoxPlaylistTracks;
         private Label lblPlaylistName;
         private ToolStripStatusLabel toolStripStatusLabeliTunesVersionText;
         private ComboBox comboBox1;
+        private iDjSpinner iDjSpinnerPlaylist;
+        private iDJToggleButton idjToggleButton1;
     }
 }

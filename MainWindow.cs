@@ -1,5 +1,6 @@
 using FontAwesome.Sharp;
 using iDj.iTunes;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 
 namespace iDj
@@ -16,8 +17,6 @@ namespace iDj
         private iTunesAppClass iTunes = new();
 
         private ImageList tabImageList;
-
-        private bool isPlaying;
 
         private int frameIndex;
         private int currentPlaylistId;
@@ -92,21 +91,19 @@ namespace iDj
 
             var currentTrack = iTunes.CurrentTrack;
 
-            if (currentTrack != null && currentTrackDatabaseId != currentTrack.TrackDatabaseID)
+            if (currentTrack != null)
             {
-                currentTrackDatabaseId = currentTrack.TrackDatabaseID;
-                currentTrackDuration = currentTrack.Duration;
+                if (currentTrackDatabaseId != currentTrack.TrackDatabaseID)
+                {
+                    currentTrackDatabaseId = currentTrack.TrackDatabaseID;
 
-                Marshal.ReleaseComObject(currentTrack);
+                    UpdateCurrentTrack(currentTrack);
 
-                UpdateCurrentTrack();
+                    UpdateAlbumArt(currentTrack);
 
-                UpdatePlaylist();
+                    UpdatePlaylist(currentTrack);
+                }
 
-                UpdateAlbumArt();
-            }
-            else if (currentTrack != null && isPlaying)
-            {
                 UpdatePlaybackTime();
             }
 
@@ -123,10 +120,10 @@ namespace iDj
             btnPlayPause.IconChar = isPlaying ? IconChar.Pause : IconChar.Play;
         }
 
-        private void UpdateCurrentTrack()
+        private void UpdateCurrentTrack(IITTrack currentTrack)
         {
-            var currentTrack = iTunes.CurrentTrack;
-            
+            currentTrackDuration = currentTrack.Duration;
+
             progPlayerTime.Maximum = currentTrack.Duration;
 
             var timeSpan = TimeSpan.FromSeconds(currentTrack.Duration);
@@ -137,14 +134,10 @@ namespace iDj
             lblTrackTitle.Text = currentTrack.Name;
             lblTrackAlbum.Text = currentTrack.Album;
             lblTrackDetails.Text = $"Year: {currentTrack.Year} | {currentTrack.SampleRate / 1000.0f:F1}Khz | {currentTrack.KindAsString}";
-
-            Marshal.ReleaseComObject(currentTrack);
         }
 
-        private void UpdatePlaylist()
+        private async void UpdatePlaylist(IITTrack currentTrack)
         {
-            var currentTrack = iTunes.CurrentTrack;
-
             var playlist = currentTrack.Playlist;
 
             if (playlist != null && currentPlaylistId != playlist.playlistID)
@@ -152,47 +145,63 @@ namespace iDj
                 currentPlaylistId = playlist.playlistID;
 
                 tabPagePlaylists.Text = $"Playlist: {playlist.Name}";
-                lblPlaylistName.Text = $"{playlist.Name} | {playlist.Time} | {playlist.Tracks.Count}";
+                lblPlaylistName.Text = $"{playlist.Name} | {playlist.Time} | {playlist.Tracks.Count:N0} Tracks";
+
+                listBoxPlaylistTracks.Visible = false;
+                iDjSpinnerPlaylist.Visible = true;
+
+                var newPlaylist = new List<string>();
+
+                await Task.Run(() =>
+                {
+                    var tracks = playlist.Tracks;
+
+                    foreach (IITTrack track in tracks)
+                    {
+                        newPlaylist.Add($"{track.PlayOrderIndex}. {track.Artist} - {track.Name}");
+
+                        Marshal.FinalReleaseComObject(track);
+                    }
+
+                    newPlaylist = newPlaylist.OrderBy(x => int.Parse(x.Split('.').First())).ToList();
+
+                    Marshal.FinalReleaseComObject(tracks);
+                });
+
+                Marshal.FinalReleaseComObject(playlist);
+
+                listBoxPlaylistTracks.BeginUpdate();
 
                 listBoxPlaylistTracks.Items.Clear();
 
-                if (playlist.Tracks.Count < 5000)
+                listBoxPlaylistTracks.Items.AddRange(newPlaylist.ToArray());
+
+                listBoxPlaylistTracks.EndUpdate();
+
+                iDjSpinnerPlaylist.Visible = false;
+
+                listBoxPlaylistTracks.Visible = true;
+            }
+
+            if (playlist != null)
+            {
+                if (listBoxPlaylistTracks.Items.Count > currentTrack.PlayOrderIndex)
                 {
-                    listBoxPlaylistTracks.BeginInvoke(new Action(() =>
-                    {
-                        listBoxPlaylistTracks.BeginUpdate();
-
-                        foreach (IITTrack track in playlist.Tracks)
-                        {
-                            listBoxPlaylistTracks.Items.Add($"{track.PlayOrderIndex}. {track.Artist} - {track.Name}");
-                        }
-
-                        listBoxPlaylistTracks.EndUpdate();
-                    }));
-
+                    listBoxPlaylistTracks.SelectedIndex = currentTrack.PlayOrderIndex - 1;
                 }
             }
-
-            var trackSelectedIndex = currentTrack.PlayOrderIndex - 1;
-
-            if (listBoxPlaylistTracks.Items.Count > currentTrack.PlayOrderIndex)
-            {
-                listBoxPlaylistTracks.SelectedIndex = trackSelectedIndex;
-            }
-
-            Marshal.ReleaseComObject(currentTrack);
         }
 
-        private void UpdateAlbumArt()
+        private void UpdateAlbumArt(IITTrack currentTrack)
         {
             ClearAlbumArtwork();
 
-            var currentTrack = iTunes.CurrentTrack;
+            var artworkCollection = currentTrack.Artwork;
 
-            var artwork = currentTrack.Artwork.Count != 0 ? currentTrack.Artwork[1] : null;
-
-            if (artwork != null)
+            if (artworkCollection.Count != 0)
             {
+                var artwork = artworkCollection[1];
+
                 var fileExtension = GetFileExtensionFromFormat(artwork.Format);
 
                 var executivePath = Path.GetDirectoryName(Application.ExecutablePath) ?? string.Empty;
@@ -202,9 +211,12 @@ namespace iDj
                 artwork.SaveArtworkToFile(fullPath);
 
                 picboxTrackArtwork.Image = Image.FromFile(fullPath);
+
+                // Perform operations on artwork
+                Marshal.FinalReleaseComObject(artwork);  // Release individual Artwork object
             }
 
-            Marshal.ReleaseComObject(currentTrack);
+            Marshal.FinalReleaseComObject(artworkCollection);  // Release Artwork collection
         }
 
         private void UpdatePlaybackTime()
