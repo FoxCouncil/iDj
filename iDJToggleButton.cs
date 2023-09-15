@@ -1,4 +1,6 @@
-﻿using FontAwesome.Sharp;
+﻿// Copyright (c) 2023 Fox Council - iDj - https://github.com/FoxCouncil/iDj
+
+using FontAwesome.Sharp;
 using Timer = System.Windows.Forms.Timer;
 
 namespace iDj;

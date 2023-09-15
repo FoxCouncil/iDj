@@ -1,3 +1,5 @@
+// Copyright (c) 2023 Fox Council - iDj - https://github.com/FoxCouncil/iDj
+
 using iDj.iTunes;
 
 namespace iDj;

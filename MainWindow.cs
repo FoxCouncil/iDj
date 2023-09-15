@@ -1,3 +1,5 @@
+// Copyright (c) 2023 Fox Council - iDj - https://github.com/FoxCouncil/iDj
+
 using FontAwesome.Sharp;
 using iDj.iTunes;
 using System.ComponentModel;

@@ -1,4 +1,6 @@
-﻿namespace iDj
+﻿// Copyright (c) 2023 Fox Council - iDj - https://github.com/FoxCouncil/iDj
+
+namespace iDj
 {
     partial class MainWindow
     {

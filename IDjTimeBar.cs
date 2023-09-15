@@ -1,4 +1,6 @@
-﻿using System.Drawing.Drawing2D;
+﻿// Copyright (c) 2023 Fox Council - iDj - https://github.com/FoxCouncil/iDj
+
+using System.Drawing.Drawing2D;
 
 namespace iDj;
 
