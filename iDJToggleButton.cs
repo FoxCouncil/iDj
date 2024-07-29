@@ -22,8 +22,10 @@ public class iDJToggleButton : IconButton
     public iDJToggleButton()
     {
         // Initialize pulse timer
-        pulseTimer = new Timer();
-        pulseTimer.Interval = 40;
+        pulseTimer = new Timer
+        {
+            Interval = 40
+        };
         pulseTimer.Tick += PulseTimer_Tick;
 
         // Set FlatStyle to enable custom drawing

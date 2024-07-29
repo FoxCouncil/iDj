@@ -2,8 +2,14 @@
 
 using FontAwesome.Sharp;
 using iDj.iTunes;
+using System;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Net;
 using System.Runtime.InteropServices;
+using System.Text;
+using System.Text.Json;
+using System.Windows.Forms;
 
 namespace iDj
 {
@@ -12,13 +18,15 @@ namespace iDj
         //private readonly char[] SpinnerFrames = { '\u2014', '\u2571', '\u007C', '\u2572', '\u2014' };
         //private readonly char[] SpinnerFrames = {
         //    '\u2014', '\u2574', '\u2576', '\u2575', '\u007C', '\u2577', '\u2575', '\u2576',
-        //    '\u2574', '\u2570', '\u256F', '\u256D', '\u256E', '\u256C', '\u256F', '\u2570'
+        //    '\u2574', '\u2570', '\u256F', '\u256D', '\u256E', '\u256C', '\u256F', '\u2570'B
         //};
         private static readonly char[] SpinnerFrames = { '\u2588', '\u2593', '\u2592', '\u2591', '\u2592', '\u2593', '\u2588', '\u2593', '\u2592', '\u2591', '\u2592', '\u2593', '\u258C', '\u2590', '\u2580', '\u2584' };
 
         private iTunesAppClass iTunes = new();
 
         private ImageList tabImageList;
+
+        private string albumArtBase64;
 
         private int frameIndex;
         private int currentPlaylistId;
@@ -34,6 +42,30 @@ namespace iDj
             iTunes.OnAboutToPromptUserToQuitEvent += Quit;
             iTunes.OnQuittingEvent += Quit;
 
+            IITSource? iTunesLibrarySource = null;
+
+            // Loop through sources to find the library
+            foreach (IITSource source in iTunes.Sources)
+            {
+                if (source.Kind == ITSourceKind.ITSourceKindLibrary)
+                {
+                    iTunesLibrarySource = source;
+                    // break;
+                }
+            }
+
+            var indent = string.Empty;
+
+            foreach (IITPlaylist playlist in iTunesLibrarySource.Playlists)
+            {
+                if (playlist.Kind == ITPlaylistKind.ITPlaylistKindUser)
+                {
+                    var userPlaylist = playlist as IITUserPlaylist;
+
+                    Debug.WriteLine($"Playlist: ({userPlaylist.SpecialKind}){playlist.Name}");
+                }
+            }
+
             tabImageList = new();
             tabImageList.AddIcon(IconChar.Gamepad);
             tabImageList.AddIcon(IconChar.List);
@@ -48,6 +80,8 @@ namespace iDj
             toolStripStatusLabeliTunesVersionText.Text = $"Version: {iTunes.Version}";
             toolStripStatusLabelCurrentTime.Text = string.Empty;
             toolStripStatusLabelCurrentDate.Text = string.Empty;
+
+            StartWebServer();
         }
 
         private void Quit()
@@ -208,11 +242,15 @@ namespace iDj
 
                 var executivePath = Path.GetDirectoryName(Application.ExecutablePath) ?? string.Empty;
 
-                var fullPath = Path.Combine(executivePath, $"albumart.{fileExtension}");
+                var albumArtFilePath = Path.Combine(executivePath, $"albumart.{fileExtension}");
 
-                artwork.SaveArtworkToFile(fullPath);
+                artwork.SaveArtworkToFile(albumArtFilePath);
 
-                picboxTrackArtwork.Image = Image.FromFile(fullPath);
+                var image = Image.FromFile(albumArtFilePath);
+
+                albumArtBase64 = image.ToBase64(GetFileMimeTypeFromFormat(artwork.Format));
+
+                picboxTrackArtwork.Image = image;
 
                 // Perform operations on artwork
                 Marshal.FinalReleaseComObject(artwork);  // Release individual Artwork object
@@ -245,17 +283,8 @@ namespace iDj
                 picboxTrackArtwork.Image.Dispose();
                 picboxTrackArtwork.Image = null;
             }
-        }
 
-        private string GetFileExtensionFromFormat(ITArtworkFormat format)
-        {
-            switch (format)
-            {
-                case ITArtworkFormat.ITArtworkFormatJPEG: return "jpg";
-                case ITArtworkFormat.ITArtworkFormatPNG: return "png";
-                case ITArtworkFormat.ITArtworkFormatBMP: return "bmp";
-                default: return "bin";
-            }
+            albumArtBase64 = string.Empty;
         }
 
         private string ShowNextFrame()
@@ -263,6 +292,186 @@ namespace iDj
             string frame = SpinnerFrames[frameIndex].ToString();
             frameIndex = (frameIndex + 1) % SpinnerFrames.Length;
             return frame;
+        }
+
+        private static string GetFileExtensionFromFormat(ITArtworkFormat format)
+        {
+            return format switch
+            {
+                ITArtworkFormat.ITArtworkFormatJPEG => "jpg",
+                ITArtworkFormat.ITArtworkFormatPNG => "png",
+                ITArtworkFormat.ITArtworkFormatBMP => "bmp",
+                _ => "bin",
+            };
+        }
+
+        private static string GetFileMimeTypeFromFormat(ITArtworkFormat format)
+        {
+            return format switch
+            {
+                ITArtworkFormat.ITArtworkFormatJPEG => "image/jpeg",
+                ITArtworkFormat.ITArtworkFormatPNG => "image/png",
+                ITArtworkFormat.ITArtworkFormatBMP => "image/bmp",
+                _ => "image/raw",
+            };
+        }
+
+        private void StartWebServer()
+        {
+            Task.Run(() =>
+            {
+                var listener = new HttpListener();
+
+                listener.Prefixes.Add("http://localhost:5000/");
+                listener.Start();
+
+                while (true)
+                {
+                    var context = listener.GetContext();
+                    var request = context.Request;
+                    var response = context.Response;
+
+                    var responseData = HandleRequest(request);
+
+                    if (responseData == null)
+                    {
+                        var path = string.Empty;
+
+                        if (request.RawUrl == null || request.RawUrl == "/")
+                        {
+                            path = "index.html";
+                        }
+                        else
+                        {
+                            path = request.RawUrl;
+                        }
+
+                        WriteHtmlResponse(response, path);
+                    }
+                    else
+                    {
+                        WriteJsonResponse(response, responseData);
+                    }
+                }
+            });
+        }
+
+        private object HandleRequest(HttpListenerRequest request)
+        {
+            switch (request.RawUrl)
+            {
+                case "/info":
+                {
+                    if (iTunes.CurrentTrack != null)
+                    {
+                        return new
+                        {
+                            response = "ok",
+                            artist = iTunes.CurrentTrack.Artist,
+                            title = iTunes.CurrentTrack.Name,
+                            album = iTunes.CurrentTrack.Album,
+                            genre = iTunes.CurrentTrack.Genre,
+                            year = iTunes.CurrentTrack.Year,
+                            art = albumArtBase64,
+                        };
+                    }
+
+                    return new
+                    {
+                        response = "ok",
+                    };
+                }
+                
+                case "/playpause":
+                {
+                    Invoke((MethodInvoker)delegate
+                    {
+                        iTunes.PlayPause();
+                    });
+
+                    return new { response = "ok" };
+                }
+
+                case "/next":
+                {
+                    Invoke((MethodInvoker)delegate
+                    {
+                        iTunes.NextTrack();
+                    });
+
+                    return new { response = "ok" };
+                }
+
+                case "/prev":
+                {
+                    Invoke((MethodInvoker)delegate
+                    {
+                        iTunes.PreviousTrack();
+                    });
+
+                    return new { response = "ok" };
+                }
+            }
+
+            return null;
+        }
+
+        private static void WriteHtmlResponse(HttpListenerResponse response, string path)
+        {
+            if (path.StartsWith('/'))
+            {
+                path = path[1..];
+            }
+
+            var filePath = Path.Combine(Debugger.IsAttached ? "..\\..\\..\\" : "", "static\\", path);
+
+            if (!File.Exists(filePath))
+            {
+                filePath = Path.Combine(Debugger.IsAttached ? "..\\..\\..\\" : "", "static\\index.html");
+            }
+
+            var buffer = File.ReadAllBytes(filePath);
+
+            var fileInfo = new FileInfo(filePath);
+
+            response.ContentType = GetFileMimeTypeFromFileExtension(fileInfo.Extension[1..]);
+            response.ContentLength64 = buffer.Length;
+
+            var output = response.OutputStream;
+
+            output.Write(buffer, 0, buffer.Length);
+            output.Close();
+        }
+
+        private static string GetFileMimeTypeFromFileExtension(string ext)
+        {
+            return ext switch
+            {
+                "jpg" => "image/jpeg",
+                "jpeg" => "image/jpeg",
+                "png" => "image/png",
+                "bmp" => "image/bmp",
+                "htm" => "text/html",
+                "html" => "text/html",
+                "css" => "text/css",
+                "woff" => "application/font-woff",
+                "woff2" => "font/woff2",
+                "ttf" => "font/truetype",
+                _ => "image/raw",
+            };
+        }
+
+        private static void WriteJsonResponse(HttpListenerResponse response, object responseData)
+        {
+            var buffer = Encoding.UTF8.GetBytes(JsonSerializer.Serialize(responseData));
+
+            response.ContentType = "application/json";
+            response.ContentLength64 = buffer.Length;
+
+            var output = response.OutputStream;
+
+            output.Write(buffer, 0, buffer.Length);
+            output.Close();
         }
     }
 }
